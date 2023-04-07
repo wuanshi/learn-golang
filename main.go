@@ -1,15 +1,16 @@
 package main
 
 import (
-	"fmt"
+	"database/sql"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
+
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 type User struct {
@@ -21,15 +22,13 @@ type User struct {
 
 func main() {
 	db := InitDB()
-	defer db.Statement.ReflectValue.Close()
+
+	defer db.Close()
 	r := gin.Default()
 	r.POST("/api/auth/register", func(c *gin.Context) {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 		tel := c.PostForm("telephone")
-		// c.JSON(200, gin.H{
-		// 	"message": "pong",
-		// })
 
 		if len(tel) != 11 {
 			// c.JSON(http.StatusUnprocessableEntity, map[string]interface{}{"code": 422, "msg": "手机号必须为11位"})
@@ -59,21 +58,25 @@ func RandomString(n int) string {
 	return string(result)
 }
 
-func InitDB() *gorm.DB {
-	host := "localhost"
-	port := 3306
-	database := "ginessential"
-	username := "root"
-	password := "root"
-	charset := "utf8"
-	args := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true", username, password, host, port, database, charset)
+func InitDB() *sql.DB {
+	// host := "localhost"
+	// port := 3306
+	// database := "ginessential"
+	// username := "root"
+	// password := "root"
+	// charset := "utf8"
+	// args := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true", username, password, host, port, database, charset)
 	// dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
-	// db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	db, err := gorm.Open(mysql.Open(args), &gorm.Config{})
+	// db, err := gorm.Open(mysql)
+
+	db, err := sql.Open("mysql", "root:root@/golang")
+	// db, err := gorm.Open(mysql.Open(args), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
-
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 	return db
 
 }
